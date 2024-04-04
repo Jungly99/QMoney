@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.ThreadContext;
 import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.ArrayList;
 
 
 public class PortfolioManagerApplication {
@@ -45,8 +47,13 @@ public class PortfolioManagerApplication {
   //  2. You can use "./gradlew build" to check if your code builds successfully.
 
   public static List<String> mainReadFile(String[] args) throws IOException, URISyntaxException {
-
-     return Collections.emptyList();
+    List<String> listOfSymbols = new ArrayList<>();
+    List<PortfolioTrade> portfolioTrades = getObjectMapper()
+        .readValue(resolveFileFromResources(args[0]), new TypeReference<List<PortfolioTrade>>() {});
+    for (PortfolioTrade portfolioTrade : portfolioTrades) {
+      listOfSymbols.add(portfolioTrade.getSymbol());
+    }
+    return listOfSymbols;
   }
 
 
