@@ -46,6 +46,59 @@ public class PortfolioManagerApplication {
   //  1. There can be few unused imports, you will need to fix them to make the build pass.
   //  2. You can use "./gradlew build" to check if your code builds successfully.
 
+  public static List<String> mainReadQuotes(String[] args) throws IOException, URISyntaxException {
+    File file = resolveFileFromResources(args[0]);
+    // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    // LocalDate endDate = LocalDate.parse(args[1],formatter);
+    LocalDate endDate = LocalDate.parse(args[1]);
+    byte[] byteArray = Files.readAllBytes(file.toPath());
+    String content = new String(byteArray, "UTF8");
+
+    ObjectMapper mapper = getObjectMapper();
+    PortfolioTrade[] portfolioTrades = mapper.readValue(content, PortfolioTrade[].class);
+
+    String token = "8ff4e2051f46223ce98c00d6337906fe64fe33b7";
+    String uri = "https://api.tiingo.com/tiingo/daily/$SYMBOL/prices?startDate=$STARTDATE&endDate=$ENDDATE&token=$APIKEY";
+
+    List<TotalReturnsDto> totalReturnsDtoList = new ArrayList<>();
+
+    for (PortfolioTrade portfolioTrade : portfolioTrades) {
+
+      String url = uri.replace("$APIKEY", token).replace("$SYMBOL", portfolioTrade.getSymbol())
+          .replace("$STARTDATE", portfolioTrade.getPurchaseDate().toString())
+          .replace("$ENDDATE", endDate.toString());
+
+      // TiingoCandle[] tiingoCandles = new
+      // RestTemplate().getForObject(url,TiingoCandle[].class);
+
+      RestTemplate restTemplate = new RestTemplate();
+      String result = restTemplate.getForObject(url, String.class);
+      TiingoCandle[] tiingoCandles = mapper.readValue(result, TiingoCandle[].class);
+
+      // List<TiingoCandle> tiingoCandles = mapper.readValue(result,
+      // ArrayList<TiingoCandle>());
+
+      double sum = Stream.of(tiingoCandles)
+          .filter(candle -> candle.getDate().equals(endDate) 
+          || candle.getDate().equals(endDate.minusDays(1))).findFirst().get()
+          .getClose();
+
+      TotalReturnsDto totalReturn = new TotalReturnsDto(portfolioTrade.getSymbol(), sum);
+
+      totalReturnsDtoList.add(totalReturn);
+
+    }
+    totalReturnsDtoList.sort(Comparator.comparing(TotalReturnsDto::getClosingPrice));
+    List<String> symbols = new ArrayList<>();
+
+    for (TotalReturnsDto a : totalReturnsDtoList) {
+      symbols.add(a.getSymbol());
+    }
+
+    return symbols;
+
+  }
+
   public static List<String> mainReadFile(String[] args) throws IOException, URISyntaxException {
     List<String> listOfSymbols = new ArrayList<>();
     List<PortfolioTrade> portfolioTrades = getObjectMapper()
@@ -55,6 +108,7 @@ public class PortfolioManagerApplication {
     }
     return listOfSymbols;
   }
+  
 
 
   // Note:
@@ -134,6 +188,7 @@ public class PortfolioManagerApplication {
         toStringOfObjectMapper, functionNameFromTestFileInStackTrace,
         lineNumberFromTestFileInStackTrace});
   }
+  
 
 
   // Note:
