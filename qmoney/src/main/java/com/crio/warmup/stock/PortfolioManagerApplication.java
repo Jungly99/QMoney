@@ -117,8 +117,51 @@ public class PortfolioManagerApplication {
     }
     return listOfSymbols;
   }
-  
 
+  public static String getToken() {
+    return "dbafe4de20a19ef23df3deda52d513e373206cb0";
+  }
+
+  static Double getOpeningPriceOnStartDate(List<Candle> candles) {
+    return candles.get(0).getOpen();
+  }
+
+
+  public static Double getClosingPriceOnEndDate(List<Candle> candles) {
+    return candles.get(candles.size() - 1).getClose();
+  }
+  
+  public static List<Candle> fetchCandles(PortfolioTrade trade, LocalDate endDate, String token) {
+    RestTemplate restTemplate = new RestTemplate();
+    String tiingoRestURL = prepareUrl(trade, endDate, token);
+    TiingoCandle[] tiingoCandleArray =
+        restTemplate.getForObject(tiingoRestURL, TiingoCandle[].class);
+    return Arrays.stream(tiingoCandleArray).collect(Collectors.toList());
+  }
+  
+  public static AnnualizedReturn calculateAnnualizedReturns(LocalDate endDate, PortfolioTrade trade,
+      Double buyPrice, Double sellPrice) {
+    double total_num_years = ChronoUnit.DAYS.between(trade.getPurchaseDate(), endDate) / 365.2422;
+    double totalReturns = (sellPrice - buyPrice) / buyPrice;
+    double annualized_returns = Math.pow((1.0 + totalReturns), (1.0 / total_num_years)) - 1;
+    return new AnnualizedReturn(trade.getSymbol(), annualized_returns, totalReturns);
+  }
+
+  public static List<AnnualizedReturn> mainCalculateSingleReturn(String[] args)
+      throws IOException, URISyntaxException {
+    List<PortfolioTrade> portfolioTrades = readTradesFromJson(args[0]);
+    List<AnnualizedReturn> annualizedReturns = new ArrayList<>();
+    LocalDate localDate = LocalDate.parse(args[1]);
+    for (PortfolioTrade portfolioTrade : portfolioTrades) {
+      List<Candle> candles = fetchCandles(portfolioTrade, localDate, getToken());
+      AnnualizedReturn annualizedReturn = calculateAnnualizedReturns(localDate, portfolioTrade,
+          getOpeningPriceOnStartDate(candles), getClosingPriceOnEndDate(candles));
+      annualizedReturns.add(annualizedReturn);
+    }
+    return annualizedReturns.stream()
+        .sorted((a1, a2) -> Double.compare(a2.getAnnualizedReturn(), a1.getAnnualizedReturn()))
+        .collect(Collectors.toList());
+  }
 
   // Note:
   // 1. You may need to copy relevant code from #mainReadQuotes to parse the Json.
