@@ -138,7 +138,7 @@ public class PortfolioManagerApplication {
         restTemplate.getForObject(tiingoRestURL, TiingoCandle[].class);
     return Arrays.stream(tiingoCandleArray).collect(Collectors.toList());
   }
-  
+
   public static AnnualizedReturn calculateAnnualizedReturns(LocalDate endDate, PortfolioTrade trade,
       Double buyPrice, Double sellPrice) {
     double total_num_years = ChronoUnit.DAYS.between(trade.getPurchaseDate(), endDate) / 365.2422;
@@ -229,16 +229,17 @@ public class PortfolioManagerApplication {
 
   public static List<String> debugOutputs() {
 
-     String valueOfArgument0 = "trades.json";
-     String resultOfResolveFilePathArgs0 = "";
-     String toStringOfObjectMapper = "";
-     String functionNameFromTestFileInStackTrace = "";
-     String lineNumberFromTestFileInStackTrace = "";
+    String valueOfArgument0 = "trades.json";
+    String resultOfResolveFilePathArgs0 =
+        "/home/crio-user/workspace/axitchandora-ME_QMONEY_V2/qmoney/bin/main/trades.json";
+    String toStringOfObjectMapper = "com.fasterxml.jackson.databind.ObjectMapper@1a482e36";
+    String functionNameFromTestFileInStackTrace = "mainReadFile";
+    String lineNumberFromTestFileInStackTrace = "29";
 
 
-    return Arrays.asList(new String[]{valueOfArgument0, resultOfResolveFilePathArgs0,
-        toStringOfObjectMapper, functionNameFromTestFileInStackTrace,
-        lineNumberFromTestFileInStackTrace});
+    return Arrays.asList(
+        new String[] {valueOfArgument0, resultOfResolveFilePathArgs0, toStringOfObjectMapper,
+            functionNameFromTestFileInStackTrace, lineNumberFromTestFileInStackTrace});
   }
   
 
