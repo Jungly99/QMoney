@@ -28,7 +28,10 @@ import org.springframework.web.client.RestTemplate;
 public class PortfolioManagerImpl implements PortfolioManager {
 
 
+
+
   private RestTemplate restTemplate;
+
 
   // Caution: Do not delete or modify the constructor, or else your build will break!
   // This is absolutely necessary for backward compatibility
@@ -68,17 +71,46 @@ public class PortfolioManagerImpl implements PortfolioManager {
       throws JsonProcessingException {
      return null;
   }
+  private Double getOpeningPriceOnStartDate(List<Candle> candles) {
+    return candles.get(0).getOpen();
+  }
 
-  //protected String buildUri(String symbol, LocalDate startDate, LocalDate endDate) {
-  //     String uriTemplate = "https:api.tiingo.com/tiingo/daily/$SYMBOL/prices?"
-  //          + "startDate=$STARTDATE&endDate=$ENDDATE&token=$APIKEY";
-  //}
+  private Double getClosingPriceOnEndDate(List<Candle> candles) {
+    return candles.get(candles.size() - 1).getClose();
+  }
+  
+  private AnnualizedReturn calculateAnnualizedReturns(LocalDate endDate, PortfolioTrade trade,
+      Double buyPrice, Double sellPrice) {
+    double total_num_years = DAYS.between(trade.getPurchaseDate(), endDate) / 365.2422;
+    double totalReturns = (sellPrice - buyPrice) / buyPrice;
+    double annualized_returns = Math.pow((1.0 + totalReturns), (1.0 / total_num_years)) - 1;
+    return new AnnualizedReturn(trade.getSymbol(), annualized_returns, totalReturns);
+  }
+
+  protected String buildUri(String symbol, LocalDate startDate, LocalDate endDate) {
+       String uriTemplate = "https:api.tiingo.com/tiingo/daily/$SYMBOL/prices?"
+            + "startDate=$STARTDATE&endDate=$ENDDATE&token=$APIKEY";
+      return uriTemplate;
+  }
 
 
   @Override
   public List<AnnualizedReturn> calculateAnnualizedReturn(List<PortfolioTrade> portfolioTrades,
       LocalDate endDate) {
-    // TODO Auto-generated method stub
-    return null;
+    List<AnnualizedReturn> annualizedReturns = new ArrayList<>();
+    for (PortfolioTrade portfolioTrade : portfolioTrades) {
+      try {
+        List<Candle> candles =
+            getStockQuote(portfolioTrade.getSymbol(), portfolioTrade.getPurchaseDate(), endDate);
+        AnnualizedReturn annualizedReturn = calculateAnnualizedReturns(endDate, portfolioTrade,
+            getOpeningPriceOnStartDate(candles), getClosingPriceOnEndDate(candles));
+        annualizedReturns.add(annualizedReturn);
+      } catch (JsonProcessingException e) {
+        // Handle the exception as per your application's requirement
+        // You can log the exception, throw a custom exception, or take any other appropriate action.
+        e.printStackTrace(); // This is a basic example. You should handle the exception properly.
+      }
+    }
+    return annualizedReturns.stream().sorted(getComparator()).collect(Collectors.toList());
   }
 }
