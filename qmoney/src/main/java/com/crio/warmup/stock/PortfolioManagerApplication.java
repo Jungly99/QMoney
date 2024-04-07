@@ -96,7 +96,16 @@ public class PortfolioManagerApplication {
     }
 
     return symbols;
-
+  }
+  public static List<PortfolioTrade> readTradesFromJson(String filename)
+      throws IOException, URISyntaxException {
+    List<PortfolioTrade> portfolioTrades = getObjectMapper().readValue(
+        resolveFileFromResources(filename), new TypeReference<List<PortfolioTrade>>() {});
+    return portfolioTrades;
+  }
+  public static String prepareUrl(PortfolioTrade trade, LocalDate endDate, String token) {
+    return "https://api.tiingo.com/tiingo/daily/" + trade.getSymbol() + "/prices?startDate="
+        + trade.getPurchaseDate() + "&endDate=" + endDate + "&token=" + token;
   }
 
   public static List<String> mainReadFile(String[] args) throws IOException, URISyntaxException {
